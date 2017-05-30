@@ -1,0 +1,336 @@
+#!/bin/bash
+# This script takes an existing Gudrun input file, strips out the RAW files associated with a specified SAMPLE,
+# and then sequentially rewrites the file in order to process a whole sequence of RAW files individually. In addition,
+# these files can be merged together in groups.
+
+# Set defaults
+GUDRUN="/home/tris/src/Gudrun2014/Gudrun/bin/gudrun_dcs"
+GUDRUNDAT="gudrun_dcs.dat"
+SAMPLE=""
+PREFIX="NIMROD000"
+SUFFIX=""
+STARTRUN=0
+ENDRUN=0
+NMERGE=1
+MAXPROC=10
+ITERATIONS=0
+KEEPTEMP=0
+declare -A ITERS
+
+USAGE="Syntax: multigud <SAMPLE name to change> <First run no.> <Last run no.> [options...]"
+USAGE=$USAGE"\n     -g <Source GudRun input file>                   [default = \"$GUDRUNDAT\"]"
+USAGE=$USAGE"\n     -p <Source RAWfile prefix>                      [default = \"$PREFIX\"]"
+USAGE=$USAGE"\n     -x <Source RAWfile suffix>                      [default = \"$SUFFIX\"]"
+USAGE=$USAGE"\n     -s <Target SAMPLE name - must be exact>"
+USAGE=$USAGE"\n     -a <Starting run number>"
+USAGE=$USAGE"\n     -b <Ending run number>"
+USAGE=$USAGE"\n     -m <Number of files to run (merge) together>    [default = $NMERGE]"
+USAGE=$USAGE"\n     -i <Number of wavelength subtraction iterations [default = 0]"
+USAGE=$USAGE"\n     -n <Number of processes to run simultaneously>  [default = $MAXPROC]"
+USAGE=$USAGE"\n     -h  Displays long help"
+USAGE=$USAGE"\n     -k  Keep temporary working directories"
+
+if [ $# == 0 ]
+then 
+  echo -e $USAGE
+  exit 1
+fi
+
+# Parse command-line options...
+while getopts "x:a:b:s:n:p:g:m:i:kh" options
+do
+  case $options in
+    p ) PREFIX=$OPTARG
+        echo "Datafile prefix set to : $PREFIX";;
+    g ) GUDRUNDAT=$OPTARG
+        echo "Source Gudrun datafile set to : $GUDRUNDAT";;
+    x ) SUFFIX=$OPTARG
+        echo "Datafile suffix set to : $SUFFIX";;
+    m ) NMERGE=$OPTARG
+        echo "Number of runs to merge together each time is $NMERGE";;
+    n ) MAXPROC=$OPTARG
+        echo "Number of simultaneous processes to run is $MAXPROC";;
+    s ) SAMPLE=$OPTARG
+        echo "SAMPLE name set to \"$SAMPLE\"";;
+    a ) STARTRUN=$OPTARG
+        echo "Start run number set to $STARTRUN";;
+    b ) ENDRUN=$OPTARG
+        echo "End run number set to $ENDRUN";;
+    i ) ITERATIONS=$OPTARG
+        echo "Wavelength subtraction iterations set to $ITERATIONS";;
+    k ) KEEPTEMP=1
+	echo "Temporary working directories ('multigud.N.dir') will not be deleted";;
+    h ) echo ""
+        echo "multigud takes an existing Gudrun input file, and strips the current list of raw datafiles from a "
+        echo "specified SAMPLE in the file. The user provides the details of a series of new raw files to insert"
+        echo "into this datafile, in the form (PREFIX)(RUNNO)[SUFFIX].raw.  Normal raw files (called, for example,"
+        echo "NIMROD00017165.raw) have 'NIMROD000' as the prefix, and no suffix, while renamed files may possess" 
+        echo "a suffix (e.g. 'NIMROD00017165_SampleB.raw', where '_SampleB' is then the suffix)."
+        echo ""
+        echo "Additionally, multigud allows multiple runs to be performed at once - i.e. parallel execution of"
+        echo "Gudrun, but without the need for and parallel framework (e.g. MPI). Simply specify the number of"
+        echo "concurrent processes with th '-n' switch. Instead of running each raw file in the specified range"
+        echo "individually, runs may also be processed in batches of some size (set with '-m')."
+        echo ""
+        echo "NOTE: All other SAMPLEs in the target Gudrun input file should be turned off (set 'Analyse this"
+        echo "sample' to 0) otherwise every process will needlessly run exactly the same data many times."
+        echo ""
+        echo "Examples:"
+        echo "  "
+        echo "  To run raw files SLS00012345 to SLS00012350 individually, changing the SAMPLE called 'Deuteriated'"
+        echo "  in the Gudrun input file 'samples.txt':"
+        echo "  bob@pc~> multigud -g samples.txt -s \"Deuteriated\" -p \"SLS000\" -a 12345 -b 12350"
+        echo "  "
+        echo "  To run all six of these files at once:"
+        echo "  bob@pc~> multigud -g samples.txt -s \"Deuteriated\" -p \"SLS000\" -a 12345 -b 12350 -n 6"
+        echo "  "
+        echo "  To run the raw files NIMROD00010000 to NIMROD00010055 in groups of five, changing the SAMPLE"
+        echo "  called 'Calcined at 500deg' in the Gudrun input file 'rb12345.txt':"
+        echo "  bob@pc~> multigud -g rb12345.txt -s \"Calcined at 500deg\" -p \"NIMROD000\" -a 10000 -b 10055 -m 5"
+        echo "  "
+        echo "  For the same example where the files have been renamed to NIMROD00010000_Calcined_at_500degC.raw,"
+        echo "  NIMROD00010001_Calcined_at_500degC.raw etc., use the following:"
+        echo "  bob@pc~> multigud -g rb12345.txt -s \"Calcined at 500deg\" -p \"NIMROD000\" -a 10000 -b 10055 -m 5 -x \"_Calcined_at_500degC\""
+        echo "  "
+        exit 1;;
+    \? ) echo "Error: Unrecognised switch '$options'"
+         exit 1;;
+    * ) echo "Error: Extra operands given."
+        echo -e $USAGE
+        exit 1;;
+  esac
+done
+
+# Check SAMPLE provided
+if [ "$SAMPLE" == "" ]
+then
+  echo "No target SAMPLE block specified."
+  if [ -e $GUDRUNDAT ]
+  then
+    echo "Available SAMPLES are:"
+    sed -n "/^SAMPLE /s/SAMPLE \(.*\){/\1/p" $GUDRUNDAT
+  else
+    echo "Specified Gudrun input file '$GUDRUNDAT' doesn't exist, so can't show list of contained samples."
+  fi
+  exit 1
+fi
+
+# Check starting run number
+if (( STARTRUN == 0 ))
+then
+  echo "Error: Starting run number must be given with '-a'."
+  exit 1
+fi
+
+# Check ending run number
+if (( ENDRUN == 0 ))
+then
+  echo "Error: Ending run number must be given with '-b'."
+  exit 1
+fi
+
+# Other variables
+NRUNNING=0
+CHILDPIDS=""
+
+# Need to protect any '/' characters in the SAMPLE name
+SAMPLE=`echo $SAMPLE | sed "s:/:[/]:g"`
+echo $SAMPLE
+
+# Does the specified Gudrun file excist?
+if [ ! -e $GUDRUNDAT ]
+then
+  echo "Specified Gudrun input file '$GUDRUNDAT' doesn't exist!"
+  exit 1
+fi
+
+# Check that the specified sample exists in the input file
+if ! `grep -q "SAMPLE $SAMPLE\s\+{" $GUDRUNDAT`
+then
+  echo "SAMPLE block named '$SAMPLE' not found in $GUDRUNDAT."
+  echo "Available SAMPLES are:"
+  sed -n "/^SAMPLE /s/SAMPLE \(.*\){/\1/p" $GUDRUNDAT
+  exit
+fi
+
+# Setup trap for SIGINT and SIGKILL so we can cleanup our processes
+function interrupt
+{
+  echo "Signal Caught"
+  echo "Current running processes are : "$CHILDPIDS
+  for a in $CHILDPIDS
+  do
+    echo "Killing $a..."
+    kill -9 $a
+  done
+  exit 1
+}
+trap "interrupt" SIGINT SIGTERM
+
+# Function to update running process list/counter
+function updateprocs
+{
+  NEWPIDS=""
+  COUNT=0
+  for a in $CHILDPIDS
+  do
+    PS=`ps --pid $a -o pid=`
+    if [ "$PS" == "" ]
+    then
+      echo "Job $a appears to have finished - removing from list..."
+      let NRUNNING=NRUNNING-1
+    else
+      NEWPIDS="$a $NEWPIDS"
+      let COUNT=COUNT+1
+    fi
+  done
+  CHILDPIDS=$NEWPIDS
+  let NRUNNING=COUNT
+}
+
+# Function to run job
+function runjob
+{
+    echo "Running job file multigud.$I..."
+
+    # Make temporary directory...
+    if [ -e multigud.${I}.dir ]
+    then
+      rm -rf multigud.${I}.dir
+    fi
+    mkdir multigud.${I}.dir
+
+    # Change working directory name in input file and move it to the working dir
+    sed "s/\(\S*\)\(\W*Gudrun input file directory\)/\1\/multigud${I}.dir\2/g" multigud.$I > multigud.${I}.dir/multigud.${I}
+
+    # If we are not iterating, just run Gudrun as per normal
+    if (( ITERATIONS == 0 )) 
+    then
+      bash << EOF &
+	cd multigud.${I}.dir
+        $GUDRUN multigud.$I > multigud.$I.out
+	cp $BASENAME.* ../
+	cd ../
+	if (( KEEPTEMP==1 )); then rm -rf multigud.${I}.dir; fi
+EOF
+    else
+      # Before we start, grab the existing Q and wavelength ranges from the input file, along with the Top-Hat width
+      WRANGE=`grep "Wavelength range to use" multigud.$I | sed "s/\([0-9.]* *[0-9.]*\).*/\1/g"`
+      echo "Wavelength range (from input file): $WRANGE"
+      QRANGE=`grep "Min, Max and step in x-scale" multigud.$I | sed "s/\([0-9.]* *[0-9.]* *[0-9.]*\).*/\1/g"`
+      echo "Q range and step (from input file): $QRANGE"
+      TOPHAT=`grep "Top hat width" multigud.$I | sed "s/-*\([0-9.]*\).*/\1/g"`
+      echo "Top Hat width    (from input file): $TOPHAT"
+
+      bash << EOF &
+	cd multigud.${I}.dir
+	# Loop over number of requested iterations
+	for ITER in \`seq 1 $ITERATIONS\`
+	do
+
+          # Set number of iterations in file, and set wavelength subtraction
+          sed -i "s/[0-9]*\(\W*Number of iterations\)/$ITERATIONS\1/g" multigud.$I
+
+	  # Wavelength binning step
+	  echo "($I) Wavelength iteration \$ITER of $ITERATIONS..."
+	  # -- Change to wavelength binning
+	  sed -i "s/\S*\W*\S*\W*\S*\(\W*Min, Max and step in x-scale\)/$WRANGE  -0.01\1/g" multigud.$I
+	  sed -i "s/[0-9]\(\W*Scale selection\)/3\1/g" multigud.$I
+	  # -- Change Top Hat width to zero
+	  sed -i "s/[0-9\.]*\(\W*Top hat width\)/0\1/g" multigud.$I
+	  # -- Change self-scattering data filename
+	  sed -i "s/.*\(Name of file containing self scattering\)/$BASENAME.mint01          \1/g" multigud.$I
+	  if (( ITER == 1 ))
+	  then
+	    sed -i "s/[0-9]\(\W*Subtract wavelength-binned\)/0\1/g" multigud.$I
+	  else
+	    sed -i "s/[0-9]\(\W*Subtract wavelength-binned\)/1\1/g" multigud.$I
+	  fi
+	  cp multigud.$I multigud.$I.w\$ITER
+	  $GUDRUN multigud.$I > multigud.$I.out.w\$ITER
+	
+	  # Q binning step
+	  echo "($I) Q iteration \$ITER of $ITERATIONS..."
+	  # -- Change to Q binning
+	  sed -i "s/\S*\W*\S*\W*\S*\(\W*Min, Max and step in x-scale\)/$QRANGE\1/g" multigud.$I
+	  sed -i "s/[0-9]\(\W*Scale selection\)/1\1/g" multigud.$I
+	  # -- Reset Top Hat width
+	  sed -i "s/[0-9\.]*\(\W*Top hat width\)/$TOPHAT\1/g" multigud.$I
+	  # -- Change self-scattering data filename
+	  sed -i "s/\S*\(\W*Name of file containing self scattering\)/$BASENAME.msubw01          \1/g" multigud.$I
+	  # -- Enable wavelength subtraction
+	  sed -i "s/[0-9]\(\W*Subtract wavelength-binned\)/1\1/g" multigud.$I
+	  cp multigud.$I multigud.$I.q\$ITER
+	  $GUDRUN multigud.$I > multigud.$I.out.q\$ITER
+
+	done
+
+	# Cleanup
+	cp $BASENAME.* ../
+	cd ../
+	if (( KEEPTEMP==1 )); then rm -rf multigud.${I}.dir; fi
+EOF
+    fi
+}
+
+# Main Loop
+echo "Run number range is $STARTRUN to $ENDRUN, to be run in groups of $NMERGE."
+I=$STARTRUN
+while (( I+NMERGE-1 <= ENDRUN ))
+do
+  while (( I+NMERGE-1 <= ENDRUN )) && (( NRUNNING < MAXPROC ))
+  do
+    # Take existing input file and do the following:
+
+    # 1) Construct a list of new filenames to go into to the file
+    FILES=""
+    NEWLINE=""
+    BASENAME=""
+    for M in `seq 1 $NMERGE`
+    do
+      J=$(( I+M-1 ))
+      FILES=$FILES"${NEWLINE}${PREFIX}${J}${SUFFIX}.raw"
+      NEWLINE="\n"
+      # Set basename (first rawfile name in list)
+      if (( M == 1 ))
+      then
+	BASENAME="${PREFIX}${J}${SUFFIX}"
+      fi
+    done
+
+    # 2) Sed out the existing datafiles in the specified SAMPLE block, and add in new ones...
+    sed -e "/^SAMPLE ${SAMPLE}/,/Force calculation/{/raw/d;/period number/s/\([0-9]\+\)\s\+\(.*files and period number\)/${NMERGE}  \2\n${FILES}/}" $GUDRUNDAT > multigud.$I
+
+    # 3) Call the runjob function, and add the PID of the last executed command to our list
+    runjob
+    CHILDPIDS="$! $CHILDPIDS"
+
+    # Now the job is running, increment our counters
+    let I=I+NMERGE
+    let NRUNNING=NRUNNING+1
+    echo "Current process list ($NRUNNING): $CHILDPIDS"
+  done
+
+  # Update job process list
+  updateprocs
+
+  # Wait for a process to finish?
+  if (( NRUNNING > 0 ))
+  then
+    wait
+  fi
+
+done
+
+# Wait for remaining processes to finish
+echo "Main loop has finished. Waiting for final $NRUNNING jobs to finish..."
+updateprocs
+while (( NRUNNING > 0 ))
+do
+  wait
+  updateprocs
+  echo "...jobs remaining = $NRUNNING"
+done
+
+exit
+

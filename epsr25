@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Script to run EPSR25 on ndlnimrodX
+# Based on original script from EPSR25 distribution
+
+# Set locations for installed bin and startup directories
+export EPSRbin='/home/tris/src/EPSR25/EPSR/bin'
+export EPSRstartup='/home/tris/src/EPSR25/EPSR/startup'
+
+# We will not assume any root folder (EPSRroot) which originally was EPSRbin/run.
+# Instead, the first command line parameter should be absolute or relative path to the simulation of interest
+
+# So, was an argument supplied?
+if [ $# -eq 0 ]; then
+  echo "Error: Please supply the path to your simulation."
+  echo "       e.g.   epsr25es  ./                              (simulation is in current working directory)"
+  echo "       e.g.   epsr25  cyclohexane                       (no path, simulation directory is in current directory)"
+  echo "       e.g.   epsr25  ./cyclohexane                     (equivalent to above)"
+  echo "       e.g.   epsr25  /home/tris/simulations/crystal    (absolute path to simulation)"
+  exit 1
+else
+  # An argument was supplied, which we will assume is a valid input file...
+  # However, we need to know if its a relative or absolute path to the input file...
+  if [[ "$1" = /* ]]; then
+    # Absolute path - keep as is
+    export EPSRrun=$1
+  else
+    # Relative path - convert to absolute path
+    export EPSRrun=`pwd`/$1
+  fi
+fi
+
+# Does the supplied directory exist? If not, create it
+if [ ! -e "$EPSRrun" ]; then
+  mkdir $EPSRrun
+fi
+
+# Check that the specified folder has plot_defaults.txt. If not then copy a version in.
+if [ ! -e "$EPSRrun"/plot_defaults.txt ]; then
+  cp "$EPSRstartup"/plot_defaults.txt "$EPSRrun"/plot_defaults.txt
+fi
+
+# Change to simulation directory, copy necessary files and run epsrshell
+# Once finished, can't copy gnuatoms.txt and gnubonds.txt back, since the user doesn't own /opt/EPSR25
+OLDDIR=`pwd`
+cd "$EPSRrun"
+cp "$EPSRstartup"/system_commands_linux.txt system_commands.txt
+cp "$EPSRstartup"/gnuatoms.txt gnuatoms.txt
+cp "$EPSRstartup"/gnubonds.txt gnubonds.txt
+cp "$EPSRstartup"/f0_WaasKirf.dat f0_WaasKirf.dat
+"$EPSRbin"/epsrshell
+#cp gnuatoms.txt "$EPSRstartup"/gnuatoms.txt
+#cp gnubonds.txt "$EPSRstartup"/gnubonds.txt
+
+# All done. Switch back to original directory and exit
+cd $OLDDIR
+
+exit 0

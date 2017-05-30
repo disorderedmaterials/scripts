@@ -1,0 +1,80 @@
+#!/bin/bash
+
+# Script to run scripted EPSR23 commands on ndlnimrodX
+# Equivalent to running 'ss <script.txt>' within EPSR
+
+# Set locations for installed bin and startup directories
+export EPSRbin='/home/tris/src/EPSR23/bin'
+export EPSRstartup='/home/tris/src/EPSR23/startup'
+
+# First command line parameter should be absolute or relative path to the script file to run
+
+# So, was an argument supplied?
+if [ $# -eq 0 ]; then
+  echo "Error: Please supply the path to the scriptfile you wish to run. It must be contained in the simulation directory."
+  echo "       e.g.   epsr23ss  run.txt                            (no path, scriptfile in current directory)"
+  echo "       e.g.   epsr23ss  ./run.txt                          (equivalent to above)"
+  echo "       e.g.   epsr23ss  /home/tris/run/water/script.txt    (absolute path to script)"
+  exit 1
+else
+  # An argument was supplied, which we will assume is a valid input file...
+  # However, we need to know if its a relative or absolute path to the input file...
+  if [[ "$1" = /* ]]; then
+    # Absolute path - keep as is
+    export SCRIPTFILE=$1
+  else
+    # Relative path - convert to absolute path
+    export SCRIPTFILE=`pwd`/$1
+  fi
+fi
+
+# Does the supplied scriptfile exist? If not, raise error and exit
+if [ ! -e "$SCRIPTFILE" ]; then
+  echo "Error: Specified scriptfile '$SCRIPTFILE' does not exist."
+  exit 1
+fi
+echo "Specified scriptfile (witih full path) is: "$SCRIPTFILE
+SCRIPTBASENAME=`basename $SCRIPTFILE`
+
+# Get run directory from supplied (now absolute) scriptfile path
+export EPSRrun=`dirname $SCRIPTFILE`
+echo -e "\nDirectory containing scriptfile is: "$EPSRrun
+
+# Change to simulation directory
+OLDDIR=`pwd`
+cd "$EPSRrun"
+
+# Check the contents of runflag.txt - is a script already running here?
+if [ -e $EPSRrun/runflag.txt ]; then
+  read -r EPSRstate EPSRscript EPSRscriptname < runflag.txt
+
+  if [ $EPSRstate == "script" ]; then
+    # A script is either running, stopped, or paused...
+    if [ $EPSRscript == "running" ]; then
+      echo -e "\nA script ($EPSRscriptname) is already running. End it or pause it within EPSR, or use 'epsr23es'."
+      exit 1
+    elif [ $EPSRscript == "stopped" ]; then
+      echo -e "\nA script ($EPSRscriptname) was running, but is currently stopped."
+      echo -e "\nThe existing runflag.txt will be deleted..."
+      /bin/rm -v $EPSRrun/runflag.txt
+    elif [ $EPSRscript == "pausing" ]; then
+      echo -e "\nA script ($EPSRscriptname) was paused, but is currently paused."
+      echo -e "\nThe existing runflag.txt will be deleted..."
+      /bin/rm -v $EPSRrun/runflag.txt
+    fi
+  elif [ $EPSRstate == "interactive" ]; then
+    echo -e "\nCurrently in interactive mode, so script can safely be started."
+  fi
+fi
+
+# Pass script to EPSR
+echo -e "\nStarting EPSR."
+echo -e "\nTo stop the script, start EPSR23 in the simulation folder and 'es' or 'ps' in the normal way,"
+echo "or use the 'epsr23ps' or 'epsr23ss' commands."
+
+nohup echo "ss $SCRIPTBASENAME" | $EPSRbin/epsrshell > $SCRIPTFILE.out &
+
+echo "Script was passed to EPSR - text output will be appended to $SCRIPTBASENAME.out"
+echo "Check the contents of this file for errors etc."
+
+exit 0

@@ -1,0 +1,67 @@
+#!/bin/bash
+
+# Simple script to handle execution of Gudrun, offering ability to specify target input file to load on startup
+
+GUDRUNBASE=/home/tris/src/Gudrun2016/Gudrun
+
+# Check for input file
+if [ $# -eq 0 ]; then
+  echo "No input file supplied - starting Gudrun with default startup file..."
+
+  cd $GUDRUNBASE
+
+  # Reconstruct vanilla sysparN
+  rm GudrunGUI.sysparN
+  echo "bin/gudrun_dcs;" > GudrunGUI.sysparN
+  echo "bin/purge_det;" >> GudrunGUI.sysparN
+  echo "rungnuplot.sh;" >> GudrunGUI.sysparN
+  echo "rungnuplotplot.sh;" >> GudrunGUI.sysparN
+  echo "/home/tris/src/Gudrun2014/Gudrun/StartupFiles/NIMROD/NIMRODstartup.txt;" >> GudrunGUI.sysparN
+  echo ";" >> GudrunGUI.sysparN
+
+  # Run gudrun
+  java -Xmx1g -Duser.language=en -cp "./GudrunGUI" -jar "./GudrunGUI/GudrunGUI_4.jar" N
+else
+  # An argument was supplied, which we will assume is a valid input file...
+  # However, we need to know if its a relative or absolute path to the input file...
+  if [[ "$1" = /* ]]; then
+    # Absolute path - keep as is
+    INPUTFILE=$1
+  else
+    # Relative path - convert to absolute path
+    INPUTFILE=`pwd`/$1
+  fi
+
+  # Now, check if input file exists...
+  if [ ! -e $INPUTFILE ]; then
+    echo "Specified input file '$INPUTFILE' does not exist."
+    exit 1
+  fi
+  echo "Starting up with specified input file '$INPUTFILE'..."
+
+  # We need to modify the default GudrunN_linux.syspar to load our input file
+  # The target input file is on line 5 of the file - keep everything else the same...
+  cd $GUDRUNBASE
+
+  # Construct custom sysparN
+  rm GudrunGUI.sysparN
+  echo "bin/gudrun_dcs;" > GudrunGUI.sysparN
+  echo "bin/purge_det;" >> GudrunGUI.sysparN
+  echo "rungnuplot.sh;" >> GudrunGUI.sysparN
+  echo "rungnuplotplot.sh;" >> GudrunGUI.sysparN
+  echo "$INPUTFILE;" >> GudrunGUI.sysparN
+  echo ";" >> GudrunGUI.sysparN
+
+  java -Xmx1g -Duser.language=en -cp "./GudrunGUI" -jar "./GudrunGUI/GudrunGUI_4.jar" N
+
+  # Once finished, we must reconstruct GudrunN_linux.syspar (since some other settings may have been changed)
+  #head -n 4 GudrunGUI.sysparN > temp.syspar
+  #gawk 'NR == 5 { print $0 }' GudrunN_linux.syspar >> temp.syspar
+  #tail -n 1 GudrunGUI.sysparN >> temp.syspar
+
+  # Backup the old GudrunN_linux.syspar, just in case
+  #cp GudrunN_linux.syspar GudrunN_linux.syspar.bak
+  #mv temp.syspar GudrunN_linux.syspar
+fi
+
+exit 0
