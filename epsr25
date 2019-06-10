@@ -4,8 +4,9 @@
 # Based on original script from EPSR25 distribution
 
 # Set locations for installed bin and startup directories
-export EPSRbin='/home/tris/src/EPSR25/EPSR/bin'
-export EPSRstartup='/home/tris/src/EPSR25/EPSR/startup'
+EPSRVERSION="EPSR25_Feb2019"
+export EPSRbin="/home/tris/src/$EPSRVERSION/EPSR/bin"
+export EPSRstartup="/home/tris/src/$EPSRVERSION/EPSR/startup"
 
 # We will not assume any root folder (EPSRroot) which originally was EPSRbin/run.
 # Instead, the first command line parameter should be absolute or relative path to the simulation of interest

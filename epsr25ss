@@ -4,8 +4,9 @@
 # Equivalent to running 'ss <script.txt>' within EPSR
 
 # Set locations for installed bin and startup directories
-export EPSRbin='/home/tris/src/EPSR25/EPSR/bin'
-export EPSRstartup='/home/tris/src/EPSR25/EPSR/startup'
+EPSRVERSION="EPSR25_Feb2019"
+export EPSRbin="/home/tris/src/$EPSRVERSION/EPSR/bin"
+export EPSRstartup="/home/tris/src/$EPSRVERSION/EPSR/startup"
 
 # First command line parameter should be absolute or relative path to the script file to run
 
@@ -70,11 +71,11 @@ fi
 # Pass script to EPSR
 echo -e "\nStarting EPSR."
 echo -e "\nTo stop the script, start EPSR25 in the simulation folder and 'es' or 'ps' in the normal way,"
-echo "or use the 'epsr25ps' or 'epsr25ss' commands."
+echo "or use the 'epsr25es' commands."
 
-nohup echo "ss $SCRIPTBASENAME" | $EPSRbin/epsrshell > $SCRIPTFILE.out &
-
-echo "Script was passed to EPSR - text output will be appended to $SCRIPTBASENAME.out"
+echo -e "\nText output will be appended to $SCRIPTBASENAME.out"
 echo "Check the contents of this file for errors etc."
+
+echo "ss $SCRIPTBASENAME" | $EPSRbin/epsrshell > $SCRIPTFILE.out
 
 exit 0
