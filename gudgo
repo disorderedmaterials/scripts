@@ -16,7 +16,7 @@ if [ $# -eq 0 ]; then
   echo "bin/purge_det;" >> GudrunGUI.sysparN
   echo "rungnuplot.sh;" >> GudrunGUI.sysparN
   echo "rungnuplotplot.sh;" >> GudrunGUI.sysparN
-  echo "/home/tris/src/Gudrun2014/Gudrun/StartupFiles/NIMROD/NIMRODstartup.txt;" >> GudrunGUI.sysparN
+  echo "/home/tris/src/Gudrun2016/Gudrun/StartupFiles/NIMROD/NIMRODstartup.txt;" >> GudrunGUI.sysparN
   echo ";" >> GudrunGUI.sysparN
 
   # Run gudrun
