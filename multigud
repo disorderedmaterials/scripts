@@ -4,7 +4,7 @@
 # these files can be merged together in groups.
 
 # Set defaults
-GUDRUN="/home/tris/src/Gudrun2014/Gudrun/bin/gudrun_dcs"
+GUDRUN="/home/nimrod_mgr/Gudrun/Gudrun/bin/gudrun_dcs"
 GUDRUNDAT="gudrun_dcs.dat"
 SAMPLE=""
 PREFIX="NIMROD000"
@@ -12,6 +12,7 @@ SUFFIX=""
 STARTRUN=0
 ENDRUN=0
 NMERGE=1
+MERGESTEP=1
 MAXPROC=10
 ITERATIONS=0
 KEEPTEMP=0
@@ -25,6 +26,7 @@ USAGE=$USAGE"\n     -s <Target SAMPLE name - must be exact>"
 USAGE=$USAGE"\n     -a <Starting run number>"
 USAGE=$USAGE"\n     -b <Ending run number>"
 USAGE=$USAGE"\n     -m <Number of files to run (merge) together>    [default = $NMERGE]"
+USAGE=$USAGE"\n     -t <Run number step to use when merging>        [default = value of NMERGE]"
 USAGE=$USAGE"\n     -i <Number of wavelength subtraction iterations [default = 0]"
 USAGE=$USAGE"\n     -n <Number of processes to run simultaneously>  [default = $MAXPROC]"
 USAGE=$USAGE"\n     -h  Displays long help"
@@ -37,7 +39,7 @@ then
 fi
 
 # Parse command-line options...
-while getopts "x:a:b:s:n:p:g:m:i:kh" options
+while getopts "x:a:b:s:n:p:g:m:t:i:kh" options
 do
   case $options in
     p ) PREFIX=$OPTARG
@@ -47,7 +49,10 @@ do
     x ) SUFFIX=$OPTARG
         echo "Datafile suffix set to : $SUFFIX";;
     m ) NMERGE=$OPTARG
-        echo "Number of runs to merge together each time is $NMERGE";;
+	MERGESTEP=$NMERGE
+        echo "Number of runs to merge together each time is $NMERGE (merge step = $MERGESTEP)";;
+    t ) MERGESTEP=$OPTARG
+        echo "Stepsize to be used in merge is $MERGESTEP";;
     n ) MAXPROC=$OPTARG
         echo "Number of simultaneous processes to run is $MAXPROC";;
     s ) SAMPLE=$OPTARG
@@ -211,7 +216,7 @@ function runjob
         $GUDRUN multigud.$I > multigud.$I.out
 	cp $BASENAME.* ../
 	cd ../
-	if (( KEEPTEMP==1 )); then rm -rf multigud.${I}.dir; fi
+	if (( KEEPTEMP==0 )); then rm -rf multigud.${I}.dir; fi
 EOF
     else
       # Before we start, grab the existing Q and wavelength ranges from the input file, along with the Top-Hat width
@@ -268,13 +273,13 @@ EOF
 	# Cleanup
 	cp $BASENAME.* ../
 	cd ../
-	if (( KEEPTEMP==1 )); then rm -rf multigud.${I}.dir; fi
+	if (( KEEPTEMP==0 )); then rm -rf multigud.${I}.dir; fi
 EOF
     fi
 }
 
 # Main Loop
-echo "Run number range is $STARTRUN to $ENDRUN, to be run in groups of $NMERGE."
+echo "Run number range is $STARTRUN to $ENDRUN, to be run in groups of $NMERGE, with stepsize $MERGESTEP."
 I=$STARTRUN
 while (( I+NMERGE-1 <= ENDRUN ))
 do
@@ -306,7 +311,7 @@ do
     CHILDPIDS="$! $CHILDPIDS"
 
     # Now the job is running, increment our counters
-    let I=I+NMERGE
+    let I=I+$MERGESTEP
     let NRUNNING=NRUNNING+1
     echo "Current process list ($NRUNNING): $CHILDPIDS"
   done
