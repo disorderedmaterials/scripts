@@ -5,7 +5,7 @@ APPVERSION=""
 APPDIR=""
 BINARIES=""
 NBINARIES=0
-ICONDIR="icon/"
+ICONDIR="icon"
 
 usage()
 {
