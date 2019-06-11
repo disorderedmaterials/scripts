@@ -27,7 +27,7 @@ do
 		b)
 			BINARIES[NBINARIES]=${OPTARG}
 			echo "Added binary '${BINARIES[NBINARIES]} to the list of targets"
-			((NBINARIES++))
+			let NBINARIES=NBINARIES+1
 			;;
 		v)
 			APPVERSION=${OPTARG}
@@ -117,7 +117,7 @@ do
 	then
 		mkdir -p ${APPDIR}/usr/share/icons/hicolor/${i}x${i}
 		cp -v ${icon} ${APPDIR}/usr/share/icons/hicolor/${i}x${i}/${APPNAME}.png
-		((NFOUND++))
+		let NFOUND=NFOUND+1
 	fi
 done
 
