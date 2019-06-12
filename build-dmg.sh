@@ -3,7 +3,7 @@
 # Check that a filename (assumed to be a dmginfo file) was provided
 if [ "x$1" = "x" ]
 then
-  echo "Usage : mkdmg <dmginfo>"
+  echo "Usage : build-dmg <dmginfo>"
   exit 1
 fi
 
