@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Check that a filename (assumed to be a dmginfo file) was provided
-if [ "x$1" == "x" ]
+if [ "x$1" = "x" ]
 then
   echo "Usage : mkdmg <dmginfo>"
   exit 1
@@ -65,7 +65,7 @@ then
 fi
 
 # -- Check for NONE being specified for a critical variable
-if [ "x$APP_NAME" == "NONE" ] || [ "x$APP_BIN" == "xNONE" ] || [ "x$APP_PLIST" == "xNONE" ]
+if [ "x$APP_NAME" = "NONE" ] || [ "x$APP_BIN" = "xNONE" ] || [ "x$APP_PLIST" = "xNONE" ]
 then
   echo "One or more critical variables have not been defined."
   echo "name=[$APP_NAME] bin=[$APP_BIN] plist=[$APP_PLIST]"
@@ -75,7 +75,7 @@ fi
 # /---------------------------------\
 # | Retrieve create-dmg if required |
 # \---------------------------------/
-if [ "$USEPKGDMG" == "TRUE" ]
+if [ "$USEPKGDMG" = "FALSE" ]
 then
 	echo -e "\nRetrieving create-dmg...\n"
 	wget -q https://github.com/andreyvit/create-dmg/archive/v1.0.0.5.tar.gz -O ./create-dmg.tar.gz
@@ -141,7 +141,7 @@ done
 # /--------------\
 # | Copy Qt data |
 # \--------------/
-if [ $USE_QT == "TRUE" ]
+if [ $USE_QT = "TRUE" ]
 then
   echo -e "\nRunning macdeployqt....\n"
 
@@ -149,7 +149,7 @@ then
   $QT_DIR/bin/macdeployqt $APP_ROOT/${APP_NAME}.app -verbose=2
 
   # -- Remove any dylibs which Qt may have copied in to the Frameworks dir?
-  if [ $QT_NO_DYLIBS == "TRUE" ]
+  if [ $QT_NO_DYLIBS = "TRUE" ]
   then
     echo "Removing dylibs copied in by macdeployqt..."
     rm -v $APP_FRAMEWORKS/*dylib
@@ -262,8 +262,8 @@ then
     if [ "x$dylib2" != "xNONE" ]; then install_name_tool -id "@executable_path/../lib/$dylibname2" $dylibname2.2; fi
 
     # Combine into one lib (if two libs were supplied)
-    if [ "x$dylib1" == "xNONE" ]; then mv $dylibname2.2 $APP_LIBRARIES/$lib
-    elif [ "x$dylib2" == "xNONE" ]; then mv $dylibname1.1 $APP_LIBRARIES/$lib
+    if [ "x$dylib1" = "xNONE" ]; then mv $dylibname2.2 $APP_LIBRARIES/$lib
+    elif [ "x$dylib2" = "xNONE" ]; then mv $dylibname1.1 $APP_LIBRARIES/$lib
     else
       if ! lipo -create -output $APP_LIBRARIES/$lib ./$dylibname1.1 ./$dylibname2.2
       then
@@ -434,7 +434,7 @@ fi
 # \------------------/
 echo -e "\nCreating dmg file....\n"
 
-if [ $USEPKGDMG == "TRUE" ]
+if [ $USEPKGDMG = "TRUE" ]
 then
   ARGS="--source $APP_ROOT --target ${APP_ROOT}.dmg --volname ${APP_ROOT}"
   if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --icon ${APP_ROOT}/.VolumeIcon.icns"; fi
