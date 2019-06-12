@@ -69,6 +69,21 @@ then
   exit 1
 fi
 
+# /---------------------------------\
+# | Retrieve create-dmg if required |
+# \---------------------------------/
+if [ "$USEPKGDMG" == "TRUE" ]
+then
+	echo -e "\nRetrieving create-dmg...\n"
+	wget -q https://github.com/andreyvit/create-dmg/archive/v1.0.0.5.tar.gz -O ./create-dmg.tar.gz
+	tar -zxvf create-dmg.tar.gz
+	rm create-dmg.tar.gz
+
+	cd create-dmg-*
+	CREATEDMG=`pwd`/create-dmg
+	echo " -- create-dmg script is at '$CREATEDMG'"
+fi
+
 # /-------------------\
 # | Create bundle dir |
 # \-------------------/
