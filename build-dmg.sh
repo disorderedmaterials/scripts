@@ -7,6 +7,9 @@ then
   exit 1
 fi
 
+# Enable erroring
+set -e
+
 # /-----------------\
 # | Define defaults |
 # \-----------------/
@@ -441,7 +444,7 @@ else
   ARGS="--volname ${APP_ROOT}"
   if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
   if [ x$APP_LICENSE != "x" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
-  create-dmg $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
+  $CREATEDMG $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
 fi
 
 # /---------\
