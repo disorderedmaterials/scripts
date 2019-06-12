@@ -82,8 +82,7 @@ then
 	tar -zxvf create-dmg.tar.gz
 	rm create-dmg.tar.gz
 
-	cd create-dmg-*
-	CREATEDMG=`pwd`/create-dmg
+	CREATEDMG=`ls -1 create-dmg-*/create-dmg`
 	echo " -- create-dmg script is at '$CREATEDMG'"
 fi
 
