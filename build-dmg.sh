@@ -7,13 +7,6 @@ then
   exit 1
 fi
 
-# Check for pkg-dmg
-if( ! which pkg-dmg);
-then
-	echo "Error: pkg-dmg not found. Exiting..."
-	exit 1
-fi
-
 # /-----------------\
 # | Define defaults |
 # \-----------------/
@@ -50,6 +43,9 @@ QT_NO_DYLIBS="TRUE"
 QT_EXTRA_FRAMEWORKS=""
 QT_EXTRA_IMAGEFORMATS=""
 QT_VERSION="4"
+
+# -- DMG builder
+USEPKGDMG="FALSE"
 
 # -- EXTRA_DYLIBS : Extra dylibs to be copied in to the bundle (or NONE)
 # --              : Format is "<input dylib | NONE>,<input dylib | NONE>,<output dylib>"
@@ -420,10 +416,18 @@ fi
 # \------------------/
 echo -e "\nCreating dmg file....\n"
 
-ARGS="--source $APP_ROOT --target ${APP_ROOT}.dmg --volname ${APP_ROOT}"
-if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --icon ${APP_ROOT}/.VolumeIcon.icns"; fi
-if [ x$APP_LICENSE != "x" ]; then ARGS="$ARGS --license ${APP_ROOT}/.COPYING"; fi
-pkg-dmg $ARGS --symlink /Applications:"/Applications"
+if [ $USEPKGDMG == "TRUE" ]
+then
+  ARGS="--source $APP_ROOT --target ${APP_ROOT}.dmg --volname ${APP_ROOT}"
+  if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --icon ${APP_ROOT}/.VolumeIcon.icns"; fi
+  if [ x$APP_LICENSE != "x" ]; then ARGS="$ARGS --license ${APP_ROOT}/.COPYING"; fi
+  pkg-dmg $ARGS --symlink /Applications:"/Applications"
+else
+  ARGS="--volname ${APP_ROOT}"
+  if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
+  if [ x$APP_LICENSE != "x" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
+  create-dmg $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
+fi
 
 # /---------\
 # | Cleanup |
