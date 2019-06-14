@@ -11,12 +11,14 @@ DEVELOPMENT_BRANCH="develop"
 JQRELEASEURL="https://github.com/stedolan/jq/releases/download/jq-1.6"
 RELEASE_NAME="UnnamedRelease"
 RELEASE_BODY="No information."
+RELEASE_BODY_FILE=""
+RELEASE_BODY_FILE_WARN="false"
 RELEASE_PRE="false"
 ARTIFACTS=""
 NARTIFACTS=0
 
 # Parse options
-while getopts ":n:b:d:p" opt
+while getopts ":n:b:d:f:p" opt
 do
 	case "${opt}" in
 		b)
@@ -26,6 +28,14 @@ do
 		d)
 			DEVELOPMENT_BRANCH=${OPTARG}
 			echo "Development branch which spawns continuous releases set to '${DEVELOPMENT_BRANCH=}'"
+			;;
+		f)
+			RELEASE_BODY_FILE=${OPTARG}
+			echo "Release body will be set from markdown file '${RELEASE_BODY_FILE}'"
+			;;
+		w)
+			RELEASE_BODY_FILE_WARN="true"
+			echo "A non-existent release body file will not cause an error."
 			;;
 		n)
 			RELEASE_NAME=${OPTARG}
@@ -60,6 +70,25 @@ do
 	let NARTIFACTS=NARTIFACTS+1
 	shift
 done
+
+# Load and process release body file if required
+if [ "x$RELEASE_BODY_FILE" != "x" ]
+then
+	if [ -e $RELEASE_BODY_FILE ]
+	then
+		# Read in the file, preserving line-feeds
+		RELEASE_BODY=$(<$RELEASE_BODY_FILE)
+
+		# Convert LF to <br/>
+		RELEASE_BODY=${RELEASE_BODY//$'\n'/<br\/>}
+	elif [ "$RELEASE_BODY_FILE_WARN" = "true" ]
+	then
+		echo "Warning: Release body file $RELEASE_BODY_FILE specified, but it does not exist."
+	else
+		echo "Error: Release body file $RELEASE_BODY_FILE does not exist."
+		exit 1
+	fi
+fi
 
 # Retrieve jq to do the JSON parsing
 if [ "${OS}" = "osx" ]
