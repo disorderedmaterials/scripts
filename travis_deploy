@@ -76,6 +76,11 @@ then
 
 	export TRAVIS_TAG=continuous/$(git log --format=%h -1)
 	git tag $TRAVIS_TAG
+
+	# Set appropriate name/body for the continuous release
+	RELEASE_NAME="Continuous build"
+        RELEASE_BODY="Continuous build ${TRAVIS_COMMIT} (${TRAVIS_JOB_WEB_URL})"
+	echo "Note: release name and body have been set appropriately for a continuous build."
 fi
 
 echo "Tag for release is: $TRAVIS_TAG"
