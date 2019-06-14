@@ -1,0 +1,72 @@
+#!/bin/bash
+
+# Prepare for deployment on GitHub releases
+# Assumes Travis CI is the build system
+# For Linux and OSX
+
+OS=$TRAVIS_OS_NAME
+CURRENTBRANCH=$TRAVIS_BRANCH
+REPOURL="https://api.github.com/repos/${TRAVIS_REPO_SLUG}"
+CONTINUOUSBRANCH="master"
+JQRELEASEURL="https://github.com/stedolan/jq/releases/download/jq-1.6"
+
+# Enable erroring
+set -e
+
+# Disable command expansion so we don't leak secrets
+set +x
+
+# Prune old continuous releases if we are building from the development branch
+echo "Current branch: '${CURRENTBRANCH}'"
+if [ "${CURRENTBRANCH}" = "${CONTINUOUSBRANCH}" ]
+then
+	echo "Pruning old continuous releases..."
+
+	# Retrieve jq to do the JSON parsing
+	if [ "${OS}" = "osx" ]
+	then
+		wget -q ${JQRELEASEURL}/jq-osx-amd64 -O jq
+	elif [ "${OS}" = "linux" ]
+	then
+		wget -q ${JQRELEASEURL}/jq-linux64 -O jq
+	else
+		echo "Unrecognised OS '${OS}'."
+		exit 1
+	fi
+
+	# Make the jq binary executable
+	chmod u+x ./jq
+
+	# Retrieve the release information from GitHub and filter it with jq to get the continuous build urls and tags to delete
+	JSON=$(curl -XGET --header "Authorization: token ${GITHUB_TOKEN}" ${REPOURL}/releases)
+	URLS=$(echo $JSON | ./jq -r '.[] | select(.tag_name | match("continuous/.*")) | .url')
+	TAGS=$(echo $JSON | ./jq -r '.[] | select(.tag_name | match("continuous/.*")) | .tag_name')
+
+	# Delete releases
+	echo "  - Found continuous release url(s): "$URLS
+	for url in $URLS
+	do
+		echo "  ! Deleting continuous release at $url..."
+		curl -XDELETE --header "Authorization: token ${GITHUB_TOKEN}" $url
+	done
+
+	# Delete tags
+	echo "  - Found tags: "$TAGS
+	for tag in $TAGS
+	do
+		echo "  ! Deleting reference $tag..."
+		curl -XDELETE --header "Authorization: token ${GITHUB_TOKEN}" ${REPOURL}/git/refs/tags/${tag}
+	done
+fi
+
+# Set a suitable tag if we are deploying a continuous release
+if [ "${CURRENTBRANCH}" = "${CONTINUOUSBRANCH}" ]
+then
+	# Set GitHub username and email
+	git config --local user.name "trisyoungs"
+	git config --local user.email "tristan.youngs@stfc.ac.uk"
+
+	export TRAVIS_TAG=continuous/$(git log --format=%h -1)
+	git tag $TRAVIS_TAG
+	echo "Current continuous build tag will be: $TRAVIS_TAG"
+fi
