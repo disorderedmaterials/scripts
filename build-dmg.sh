@@ -1,11 +1,14 @@
 #!/bin/bash
 
 # Check that a filename (assumed to be a dmginfo file) was provided
-if [ "x$1" == "x" ]
+if [ "x$1" = "x" ]
 then
-  echo "Usage : mkdmg <dmginfo>"
+  echo "Usage : build-dmg <dmginfo>"
   exit 1
 fi
+
+# Enable erroring
+set -e
 
 # /-----------------\
 # | Define defaults |
@@ -62,11 +65,25 @@ then
 fi
 
 # -- Check for NONE being specified for a critical variable
-if [ "x$APP_NAME" == "NONE" ] || [ "x$APP_BIN" == "xNONE" ] || [ "x$APP_PLIST" == "xNONE" ]
+if [ "$APP_NAME" = "NONE" ] || [ "$APP_BIN" = "NONE" ] || [ "$APP_PLIST" = "NONE" ]
 then
   echo "One or more critical variables have not been defined."
   echo "name=[$APP_NAME] bin=[$APP_BIN] plist=[$APP_PLIST]"
   exit 1
+fi
+
+# /---------------------------------\
+# | Retrieve create-dmg if required |
+# \---------------------------------/
+if [ "$USEPKGDMG" = "FALSE" ]
+then
+	echo -e "\nRetrieving create-dmg...\n"
+	wget -q https://github.com/andreyvit/create-dmg/archive/v1.0.0.5.tar.gz -O ./create-dmg.tar.gz
+	tar -zxvf create-dmg.tar.gz
+	rm create-dmg.tar.gz
+
+	CREATEDMG=`ls -1 create-dmg-*/create-dmg`
+	echo " -- create-dmg script is at '$CREATEDMG'"
 fi
 
 # /-------------------\
@@ -123,7 +140,7 @@ done
 # /--------------\
 # | Copy Qt data |
 # \--------------/
-if [ $USE_QT == "TRUE" ]
+if [ "$USE_QT" = "TRUE" ]
 then
   echo -e "\nRunning macdeployqt....\n"
 
@@ -131,7 +148,7 @@ then
   $QT_DIR/bin/macdeployqt $APP_ROOT/${APP_NAME}.app -verbose=2
 
   # -- Remove any dylibs which Qt may have copied in to the Frameworks dir?
-  if [ $QT_NO_DYLIBS == "TRUE" ]
+  if [ "$QT_NO_DYLIBS" = "TRUE" ]
   then
     echo "Removing dylibs copied in by macdeployqt..."
     rm -v $APP_FRAMEWORKS/*dylib
@@ -240,12 +257,12 @@ then
     fi
 
     # Change local id in dylibs
-    if [ "x$dylib1" != "xNONE" ]; then install_name_tool -id "@executable_path/../lib/$dylibname1" $dylibname1.1; fi
-    if [ "x$dylib2" != "xNONE" ]; then install_name_tool -id "@executable_path/../lib/$dylibname2" $dylibname2.2; fi
+    if [ "$dylib1" != "NONE" ]; then install_name_tool -id "@executable_path/../lib/$dylibname1" $dylibname1.1; fi
+    if [ "$dylib2" != "NONE" ]; then install_name_tool -id "@executable_path/../lib/$dylibname2" $dylibname2.2; fi
 
     # Combine into one lib (if two libs were supplied)
-    if [ "x$dylib1" == "xNONE" ]; then mv $dylibname2.2 $APP_LIBRARIES/$lib
-    elif [ "x$dylib2" == "xNONE" ]; then mv $dylibname1.1 $APP_LIBRARIES/$lib
+    if [ "$dylib1" = "NONE" ]; then mv $dylibname2.2 $APP_LIBRARIES/$lib
+    elif [ "$dylib2" = "NONE" ]; then mv $dylibname1.1 $APP_LIBRARIES/$lib
     else
       if ! lipo -create -output $APP_LIBRARIES/$lib ./$dylibname1.1 ./$dylibname2.2
       then
@@ -324,10 +341,10 @@ fi
 # /------------------\
 # | Generate iconset |
 # \------------------/
-echo -e "\nGenerating iconset....\n"
-
-if [ x$APP_ICON != "xNONE" ];
+if [ "x$APP_ICON" != "xNONE" ];
 then
+  echo -e "\nGenerating iconset....\n"
+
   if [ ! -e $APP_ICON ]; then
     echo "Error: Specified icon file does not exist: $APP_ICON"
     exit 1
@@ -416,17 +433,17 @@ fi
 # \------------------/
 echo -e "\nCreating dmg file....\n"
 
-if [ $USEPKGDMG == "TRUE" ]
+if [ "$USEPKGDMG" = "TRUE" ]
 then
   ARGS="--source $APP_ROOT --target ${APP_ROOT}.dmg --volname ${APP_ROOT}"
-  if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --icon ${APP_ROOT}/.VolumeIcon.icns"; fi
-  if [ x$APP_LICENSE != "x" ]; then ARGS="$ARGS --license ${APP_ROOT}/.COPYING"; fi
+  if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --icon ${APP_ROOT}/.VolumeIcon.icns"; fi
+  if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --license ${APP_ROOT}/.COPYING"; fi
   pkg-dmg $ARGS --symlink /Applications:"/Applications"
 else
   ARGS="--volname ${APP_ROOT}"
-  if [ x$APP_ICON != "x" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
-  if [ x$APP_LICENSE != "x" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
-  create-dmg $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
+  if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
+  if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
+  $CREATEDMG $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
 fi
 
 # /---------\
