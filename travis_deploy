@@ -10,7 +10,7 @@ REPOURL="https://api.github.com/repos/${TRAVIS_REPO_SLUG}"
 DEVELOPMENT_BRANCH="develop"
 JQRELEASEURL="https://github.com/stedolan/jq/releases/download/jq-1.6"
 RELEASE_NAME="UnnamedRelease"
-RELEASE_BODY="No information."
+RELEASE_BODY=""
 RELEASE_BODY_FILE=""
 RELEASE_BODY_FILE_WARN="false"
 RELEASE_PRE="false"
@@ -110,9 +110,17 @@ if [ "${CURRENT_BRANCH}" = "${DEVELOPMENT_BRANCH}" ]
 then
 	export TRAVIS_TAG=continuous/$(git log --format=%h -1)
 
-	# Set appropriate name/body for the continuous release
+	# Set appropriate name/body
 	RELEASE_NAME="Continuous build"
-        RELEASE_BODY="Continuous build ${TRAVIS_COMMIT} (${TRAVIS_JOB_WEB_URL})"
+
+	# If a body file was given, append the data to our standard header
+	BODY="Continuous build ${TRAVIS_COMMIT} (${TRAVIS_JOB_WEB_URL})"
+	if [ "x$RELEASE_BODY_FILE" != "x" ] && [ -e $RELEASE_BODY_FILE ]
+	then
+		BODY="${BODY}<br/>${RELEASE_BODY}"
+	fi
+	RELEASE_BODY=$BODY
+
 	echo "Note: release name and body have been set appropriately for a continuous build."
 fi
 
