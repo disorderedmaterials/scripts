@@ -82,6 +82,12 @@ then
 	echo "Note: release name and body have been set appropriately for a continuous build."
 fi
 
+# Check tag
+if [ "x$TRAVIS_TAG" = "x" ]
+then
+	echo "Error: No tag for current release - check your setup (did you push a release without --tags?)."
+	exit 1
+fi
 echo "Tag for release is: $TRAVIS_TAG"
 
 # Get available releases information
