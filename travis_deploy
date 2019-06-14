@@ -5,9 +5,9 @@
 # For Linux and OSX
 
 OS=$TRAVIS_OS_NAME
-CURRENTBRANCH=$TRAVIS_BRANCH
+CURRENT_BRANCH=$TRAVIS_BRANCH
 REPOURL="https://api.github.com/repos/${TRAVIS_REPO_SLUG}"
-DEVELOPMENTBRANCH="master"
+DEVELOPMENT_BRANCH="master"
 JQRELEASEURL="https://github.com/stedolan/jq/releases/download/jq-1.6"
 RELEASE_NAME="UnnamedRelease"
 RELEASE_BODY="No information."
@@ -68,7 +68,7 @@ fi
 chmod u+x ./jq
 
 # Set a suitable tag if we are deploying a continuous release
-if [ "${CURRENTBRANCH}" = "${DEVELOPMENTBRANCH}" ]
+if [ "${CURRENT_BRANCH}" = "${DEVELOPMENT_BRANCH}" ]
 then
 	export TRAVIS_TAG=continuous/$(git log --format=%h -1)
 
@@ -92,7 +92,7 @@ if [ "x$CURRENT_URL" = "x" ]
 then
 	echo " -- No release with tag $TRAVIS_TAG currently exists."
 	echo "    A new one will be created."
-	if [ "${CURRENTBRANCH}" = "${DEVELOPMENTBRANCH}" ]
+	if [ "${CURRENT_BRANCH}" = "${DEVELOPMENT_BRANCH}" ]
 	then
 		echo "    The current source will be tagged as a continuous build..."
 
@@ -108,8 +108,8 @@ else
 fi
 
 # Prune old continuous releases if we are building from the specified development branch
-echo "Current branch: '${CURRENTBRANCH}'"
-if [ "${CURRENTBRANCH}" = "${DEVELOPMENTBRANCH}" ]
+echo "Current branch: '${CURRENT_BRANCH}'"
+if [ "${CURRENT_BRANCH}" = "${DEVELOPMENT_BRANCH}" ]
 then
 	echo "Pruning old continuous releases..."
 
