@@ -15,12 +15,16 @@ ARTIFACTS=""
 NARTIFACTS=0
 
 # Parse options
-while getopts ":n:b:" opt
+while getopts ":n:b:d:" opt
 do
 	case "${opt}" in
 		b)
 			RELEASE_BODY=${OPTARG}
 			echo "Release body set to '${RELEASE_BODY}'"
+			;;
+		d)
+			DEVELOPMENT_BRANCH=${OPTARG}
+			echo "Development branch which spawns continuous releases set to '${DEVELOPMENT_BRANCH=}'"
 			;;
 		n)
 			RELEASE_NAME=${OPTARG}
