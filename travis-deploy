@@ -17,8 +17,14 @@ RELEASE_PRE="false"
 ARTIFACTS=""
 NARTIFACTS=0
 
+usage()
+{
+	echo "Usage: $0 [-n release_name] [-b release_body] [-f release_body_file] [-d dev_branch] [-w] [-p] artifacts ..."
+	exit 1
+}
+
 # Parse options
-while getopts ":n:b:d:f:p" opt
+while getopts ":n:b:d:f:pw" opt
 do
 	case "${opt}" in
 		b)
@@ -45,8 +51,11 @@ do
 			RELEASE_PRE="true"
 			echo "Release will be marked as a pre-release."
 			;;
+		\?)
+			usage()
+			;;
 		*)
-			echo "$0 [-n release_name] [-b release_body] [-p] artifacts ..."
+			usage()
 			;;
 	esac
 done
