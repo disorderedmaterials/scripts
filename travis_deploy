@@ -7,7 +7,7 @@
 OS=$TRAVIS_OS_NAME
 CURRENT_BRANCH=$TRAVIS_BRANCH
 REPOURL="https://api.github.com/repos/${TRAVIS_REPO_SLUG}"
-DEVELOPMENT_BRANCH="master"
+DEVELOPMENT_BRANCH="develop"
 JQRELEASEURL="https://github.com/stedolan/jq/releases/download/jq-1.6"
 RELEASE_NAME="UnnamedRelease"
 RELEASE_BODY="No information."
