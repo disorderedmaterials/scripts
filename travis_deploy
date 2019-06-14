@@ -1,0 +1,190 @@
+#!/bin/bash
+
+# Deploy release/assets on GitHub
+# Assumes Travis CI is the build system
+# For Linux and OSX
+
+OS=$TRAVIS_OS_NAME
+CURRENTBRANCH=$TRAVIS_BRANCH
+REPOURL="https://api.github.com/repos/${TRAVIS_REPO_SLUG}"
+DEVELOPMENTBRANCH="master"
+JQRELEASEURL="https://github.com/stedolan/jq/releases/download/jq-1.6"
+RELEASE_NAME="UnnamedRelease"
+RELEASE_BODY="No information."
+ARTIFACTS=""
+NARTIFACTS=0
+
+# Parse options
+while getopts ":n:b:" opt
+do
+	case "${opt}" in
+		b)
+			RELEASE_BODY=${OPTARG}
+			echo "Release body set to '${RELEASE_BODY}'"
+			;;
+		n)
+			RELEASE_NAME=${OPTARG}
+			echo "Release name set to '${RELEASE_NAME}'"
+			;;
+		*)
+			echo "$0 [-n release_name] [-b release_body] artifacts..."
+			;;
+	esac
+done
+
+# Enable erroring
+set -e
+
+# Disable command expansion so we don't leak secrets
+set +x
+
+
+# Assemble array of artifacts to upload to release
+shift $(expr $OPTIND - 1)
+while test $# -gt 0
+do
+	if [ ! -f $1 ]
+	then
+		echo "Error: No such artifact '$1' exists."
+		exit 1
+	fi
+	ARTIFACTS[NARTIFACTS]=$1
+	let NARTIFACTS=NARTIFACTS+1
+	shift
+done
+
+# Retrieve jq to do the JSON parsing
+if [ "${OS}" = "osx" ]
+then
+	wget -q ${JQRELEASEURL}/jq-osx-amd64 -O jq
+elif [ "${OS}" = "linux" ]
+then
+	#wget -q ${JQRELEASEURL}/jq-linux64 -O jq
+	echo "XXXXXXXXX FIX THIS"
+else
+	echo "Unrecognised OS '${OS}'."
+	exit 1
+fi
+
+# Make the jq binary executable
+chmod u+x ./jq
+
+# Set a suitable tag if we are deploying a continuous release
+if [ "${CURRENTBRANCH}" = "${DEVELOPMENTBRANCH}" ]
+then
+	# Set GitHub username and email
+	git config --local user.name "trisyoungs"
+	git config --local user.email "tristan.youngs@stfc.ac.uk"
+
+	export TRAVIS_TAG=continuous/$(git log --format=%h -1)
+	#git tag $TRAVIS_TAG
+	echo "XXX UNCOMMENT THIS!!!"
+fi
+
+echo "Tag for release is: $TRAVIS_TAG"
+
+# Get available releases information
+RELEASES=$(curl -XGET --header "Authorization: token ${GITHUB_TOKEN}" ${REPOURL}/releases)
+
+# Does our tag already have a release?
+echo "Checking for presence of current release..."
+FILTER=".[] | select(.tag_name | match(\"$TRAVIS_TAG\"))"
+CURRENT_RELEASEINFO=$(echo $RELEASES | ./jq "$FILTER")
+CURRENT_URL=$(echo $CURRENT_RELEASEINFO | ./jq -r '. | .url')
+if [ "x$CURRENT_URL" = "x" ]
+then
+	echo " -- No release with tag $TRAVIS_TAG currently exists."
+	echo "    A new one will be created."
+else
+	echo " -- Found existing release with tag $TRAVIS_TAG"
+	echo "    url: $CURRENT_URL"
+fi
+
+# Prune old continuous releases if we are building from the specified development branch
+echo "Current branch: '${CURRENTBRANCH}'"
+if [ "${CURRENTBRANCH}" = "${DEVELOPMENTBRANCH}" ]
+then
+	echo "Pruning old continuous releases..."
+
+	# Filter release information with jq to get the continuous build urls and tags to delete
+	URLS=$(echo $RELEASES | ./jq -r '.[] | select(.tag_name | match("continuous/.*")) | .url')
+	TAGS=$(echo $RELEASES | ./jq -r '.[] | select(.tag_name | match("continuous/.*")) | .tag_name')
+
+	# Delete old continuous releases (but not the current one if it exists)
+	echo "  - Found continuous release url(s): "$URLS
+	for url in $URLS
+	do
+		if [ "$url" = "$CURRENT_URL" ]
+		then
+			echo " -- Existing continuous release at $url will not be deleted as it is the current release."
+			continue
+		fi
+		echo "  ! Deleting continuous release at $url..."
+		curl -XDELETE --header "Authorization: token ${GITHUB_TOKEN}" $url
+	done
+
+	# Delete tags (but not the current one if it exists)
+	echo "  - Found tags: "$TAGS
+	for tag in $TAGS
+	do
+		if [ "$tag" = "$TRAVIS_TAG" ]
+		then
+			echo " -- Existing continuous release reference $tag will not be deleted as it is the current release."
+			continue
+		fi
+		echo "  ! Deleting reference $tag..."
+		curl -XDELETE --header "Authorization: token ${GITHUB_TOKEN}" ${REPOURL}/git/refs/tags/${tag}
+	done
+fi
+
+# If we don't already have info for our release, create one now
+if [ "x$CURRENT_URL" = "x" ]
+then
+	# Construct release information
+	RELEASE_DATA='{"tag_name": "'"$TRAVIS_TAG"'","target_commitish": "'"$TRAVIS_COMMIT"'","name": "'"$RELEASE_NAME"'","body": "'"$RELEASE_BODY"'","draft": false}'
+	echo $RELEASE_DATA
+
+	# Create release
+	CURRENT_RELEASEINFO=$(curl --header "Authorization: token ${GITHUB_TOKEN}" --data "$RELEASE_DATA" ${REPOURL}/releases)
+
+	# Extract url
+	CURRENT_URL=$(echo $CURRENT_RELEASEINFO | ./jq -r '. | .url')
+fi
+
+# Extract upload path for assets
+# -- Need to strip trailing {?name,label} part from the returned url
+UPLOAD_URL=$(echo $CURRENT_RELEASEINFO | ./jq -r '. | .upload_url' | cut -d '{' -f 1)
+if [ "x$UPLOAD_URL" = "x" ]
+then
+	echo "Error: Failed to determine upload url for release."
+	exit 1
+fi
+echo "Upload url is: $UPLOAD_URL"
+
+# Upload specified assets
+echo "Uploading assets to release..."
+
+for file in ${ARTIFACTS[@]}
+do
+	# Get the basename of the file so we call it the correct name
+	BASENAME=$(basename "${file}")
+	echo "... $file (basename=$BASENAME)"
+
+	ARTIFACT_DATA=$(curl --header "Authorization: token ${GITHUB_TOKEN}" \
+	     --header "Accept: application/vnd.github.manifold-preview" \
+	     --header "Content-Type: application/octet-stream" \
+	     --data-binary @$file \
+	     "$UPLOAD_URL?name=$BASENAME")
+
+	ARTIFACT_ID=$(echo $ARTIFACT_DATA | ./jq -r '. | .id')
+	ARTIFACT_URL=$(echo $ARTIFACT_DATA | ./jq -r '. | .browser_download_url')
+	if [ "x$ARTIFACT_ID" = "x" ] || [ "$ARTIFACT_ID" = "null" ]
+	then
+		echo "Error: Failed to upload artifact."
+		echo "Returned data was: $ARTIFACT_DATA"
+		exit 1
+	fi
+	echo "   -- Success (id: $ARTIFACT_ID, url: $ARTIFACT_URL)"
+done
+
+# All done.
