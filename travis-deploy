@@ -51,11 +51,10 @@ do
 			RELEASE_PRE="true"
 			echo "Release will be marked as a pre-release."
 			;;
-		\?)
-			usage()
+		\?)	usage
 			;;
 		*)
-			usage()
+			usage
 			;;
 	esac
 done
@@ -100,7 +99,11 @@ then
 fi
 
 # Retrieve jq to do the JSON parsing
-if [ "${OS}" = "osx" ]
+if [ "x${OS}" = "x" ]
+then
+	echo "Error: an OS must be specified."
+	exit 1
+elif [ "${OS}" = "osx" ]
 then
 	wget -q ${JQRELEASEURL}/jq-osx-amd64 -O jq
 elif [ "${OS}" = "linux" ]
