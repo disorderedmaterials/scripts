@@ -150,6 +150,8 @@ RELEASES=$(curl -XGET --header "Authorization: token ${GITHUB_TOKEN}" ${REPOURL}
 # Does our tag already have a release?
 echo "Checking for presence of current release..."
 FILTER=".[] | select(.tag_name | match(\"$TRAVIS_TAG\"))"
+echo "Releases:"
+echo $RELEASES
 CURRENT_RELEASEINFO=$(echo $RELEASES | ./jq "$FILTER")
 CURRENT_URL=$(echo $CURRENT_RELEASEINFO | ./jq -r '. | .url')
 if [ "x$CURRENT_URL" = "x" ]
