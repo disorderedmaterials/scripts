@@ -1,11 +1,32 @@
 #!/bin/bash
 
-# Check that a filename (assumed to be a dmginfo file) was provided
-if [ "x$1" = "x" ]
-then
-  echo "Usage : build-dmg <dmginfo>"
-  exit 1
-fi
+QT_DIR_OVERRIDE="NONE"
+QT_FRAMEWORKS_DIR_OVERRIDE="NONE"
+
+usage()
+{
+	echo "Usage: $0 <dmginfo> -d QT_DIR -f QT_FRAMEWORKS_DIR"
+	echo "       Command-line args override those provided in dmginfo."
+	exit 1
+}
+
+# Parse options
+while getopts ":d:f" opt
+do
+	case "${opt}" in
+		d)
+			QT_DIR_OVERRIDE=$1
+			echo "Qt in $QT_DIR_OVERRIDE will be used."
+			;;
+		f)
+			QT_FRAMEWORKS_DIR_OVERRIDE=$1
+			echo "Qt frameworks in $QT_FRAMEWORKS_DIR_OVERRIDE will be used."
+			;;
+		*)
+			usage
+			;;
+	esac
+done
 
 # Enable erroring
 set -e
@@ -62,6 +83,16 @@ if ! source $1
 then
   echo "Error sourcing dmginfo file $1"
   exit 1
+fi
+
+# Set overrides
+if [ "$QT_DIR_OVERRIDE" != "NONE" ]
+then
+	QT_DIR=${QT_DIR_OVERRIDE}
+fi
+if [ "$QT_FRAMEWORKS_DIR_OVERRIDE" != "NONE" ]
+then
+	QT_FRAMEWORKS_DIR=${QT_FRAMEWORKS_DIR_OVERRIDE}
 fi
 
 # -- Check for NONE being specified for a critical variable
