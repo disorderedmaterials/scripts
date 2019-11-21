@@ -11,15 +11,15 @@ usage()
 }
 
 # Parse options
-while getopts ":d:f" opt
+while getopts ":d:f:" opt
 do
-	case "${opt}" in
+	case $opt in
 		d)
-			QT_DIR_OVERRIDE=$1
+			QT_DIR_OVERRIDE=${OPTARG}
 			echo "Qt in $QT_DIR_OVERRIDE will be used."
 			;;
 		f)
-			QT_FRAMEWORKS_DIR_OVERRIDE=$1
+			QT_FRAMEWORKS_DIR_OVERRIDE=${OPTARG}
 			echo "Qt frameworks in $QT_FRAMEWORKS_DIR_OVERRIDE will be used."
 			;;
 		*)
