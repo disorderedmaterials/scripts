@@ -5,13 +5,13 @@ QT_FRAMEWORKS_DIR_OVERRIDE="NONE"
 
 usage()
 {
-	echo "Usage: $0 <dmginfo> -d QT_DIR -f QT_FRAMEWORKS_DIR"
+	echo "Usage: $0 -d QT_DIR -f QT_FRAMEWORKS_DIR <PROJECT.dmginfo>"
 	echo "       Command-line args override those provided in dmginfo."
 	exit 1
 }
 
 # Parse options
-while getopts ":d:f:" opt
+while getopts "d:f:" opt
 do
 	case $opt in
 		d)
@@ -27,6 +27,10 @@ do
 			;;
 	esac
 done
+
+# Get filename arg
+shift $(( OPTIND - 1 ));
+DMGINFO=$@
 
 # Enable erroring
 set -e
