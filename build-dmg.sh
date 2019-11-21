@@ -201,6 +201,7 @@ then
     then
       mkdir -vp $APP_FRAMEWORKS/$framework.framework/Resources $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION
       cp -va $QT_FRAMEWORKS_DIR/$framework.framework/Versions/$QT_VERSION/$framework $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION/
+      chmod u+rw $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION/$framework
       install_name_tool -id "@executable_path/../Frameworks/$framework.framework/Versions/$QT_VERSION/$framework" $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION/$framework
       # Rewrite dylib links in new framework
       for lib in QtSvg QtXml QtCore QtGui
