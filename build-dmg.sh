@@ -287,6 +287,7 @@ then
         echo "Error: Failed to copy 32-bit library $dylib1."
         exit 1
       fi
+      chmod u+rw ./$dylibname1.1
     fi
     if [ "x$dylib2" != "xNONE" ]; then
       if ! cp -rv $dylib2 ./$dylibname2.2
@@ -294,6 +295,7 @@ then
         echo "Error: Failed to copy 64-bit library $dylib2."
         exit 1
       fi
+      chmod u+rw ./$dylibname2.2
     fi
 
     # Change local id in dylibs
