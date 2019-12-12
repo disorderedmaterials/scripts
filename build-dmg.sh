@@ -72,8 +72,8 @@ QT_EXTRA_FRAMEWORKS=""
 QT_EXTRA_IMAGEFORMATS=""
 QT_VERSION="5"
 
-# -- DMG builder
-USEPKGDMG="TRUE"
+# -- Use local DMG builder
+USEPKGDMG="FALSE"
 
 # -- EXTRA_DYLIBS : Extra dylibs to be copied in to the bundle (or NONE)
 # --              : Format is "<input dylib | NONE>,<input dylib | NONE>,<output dylib>"
@@ -115,14 +115,6 @@ then
 	echo -e "\nRetrieving pkg-dmg...\n"
 	wget -q https://raw.githubusercontent.com/trisyoungs/scripts/master/pkg-dmg -O ./pkg-dmg
 	chmod u+x ./pkg-dmg
-else
-	echo -e "\nRetrieving create-dmg...\n"
-	wget -q https://github.com/andreyvit/create-dmg/archive/v1.0.0.5.tar.gz -O ./create-dmg.tar.gz
-	tar -zxvf create-dmg.tar.gz
-	rm create-dmg.tar.gz
-
-	CREATEDMG=`ls -1 create-dmg-*/create-dmg`
-	echo " -- create-dmg script is at '$CREATEDMG'"
 fi
 
 # /-------------------\
@@ -485,7 +477,7 @@ else
   ARGS="--volname ${APP_ROOT}"
   if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
   if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
-  $CREATEDMG $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
+  create-dmg $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
 fi
 
 # /---------\
