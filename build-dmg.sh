@@ -107,9 +107,9 @@ then
   exit 1
 fi
 
-# /-------------------------------\
-# | Retrieve create-dmg / pkg-dmg |
-# \-------------------------------/
+# /------------------\
+# | Retrieve pkg-dmg |
+# \------------------/
 if [ "$USEPKGDMG" = "TRUE" ]
 then
 	echo -e "\nRetrieving pkg-dmg...\n"
@@ -474,7 +474,7 @@ then
   if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --license ${APP_ROOT}/.COPYING"; fi
   ./pkg-dmg $ARGS --symlink /Applications:"/Applications"
 else
-  ARGS="--volname ${APP_ROOT}"
+  ARGS="--volname ${APP_ROOT} --no-internet-enable"
   if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
   if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
   create-dmg $ARGS ${APP_ROOT}.dmg ${APP_ROOT}
