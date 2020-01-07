@@ -476,7 +476,7 @@ then
   ./pkg-dmg $ARGS --symlink /Applications:"/Applications"
 fi
 if [ "$USECREATEDMG" = "TRUE" ]
-else
+then
   ARGS="--volname ${APP_ROOT} --no-internet-enable"
   if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
   if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --eula ${APP_ROOT}/.COPYING"; fi
