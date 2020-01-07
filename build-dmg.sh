@@ -72,8 +72,9 @@ QT_EXTRA_FRAMEWORKS=""
 QT_EXTRA_IMAGEFORMATS=""
 QT_VERSION="5"
 
-# -- Use local DMG builder
+# -- DMG builder (if any) to use
 USEPKGDMG="FALSE"
+USECREATEDMG="FALSE"
 
 # -- EXTRA_DYLIBS : Extra dylibs to be copied in to the bundle (or NONE)
 # --              : Format is "<input dylib | NONE>,<input dylib | NONE>,<output dylib>"
@@ -473,6 +474,8 @@ then
   if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --icon ${APP_ROOT}/.VolumeIcon.icns"; fi
   if [ "$APP_LICENSE" != "NONE" ]; then ARGS="$ARGS --license ${APP_ROOT}/.COPYING"; fi
   ./pkg-dmg $ARGS --symlink /Applications:"/Applications"
+fi
+if [ "$USECREATEDMG" = "TRUE" ]
 else
   ARGS="--volname ${APP_ROOT} --no-internet-enable"
   if [ "$APP_ICON" != "NONE" ]; then ARGS="$ARGS --volicon ${APP_ROOT}/.VolumeIcon.icns"; fi
