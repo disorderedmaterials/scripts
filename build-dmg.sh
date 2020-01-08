@@ -73,7 +73,8 @@ QT_EXTRA_IMAGEFORMATS=""
 QT_VERSION="5"
 
 # -- QT_STD_FRAMEWORKS to seek and rewrite links to in binaries / libs
-QT_STD_FRAMEWORKS=QtSvg QtXml QtCore QtGui QtWidgets
+QT_STD_FRAMEWORKS="QtSvg QtXml QtCore QtGui QtWidgets"
+
 # -- DMG builder (if any) to use
 USEPKGDMG="FALSE"
 USECREATEDMG="FALSE"
