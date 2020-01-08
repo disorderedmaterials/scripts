@@ -487,7 +487,10 @@ fi
 # | Cleanup |
 # \---------/
 
-rm -rf $APP_ROOT
+if [ "$USEPKGDMG" = "TRUE" ] || [ "$USECREATEDMG" = "TRUE" ]
+then
+  rm -rf $APP_ROOT
+fi
 
 exit 0
 
