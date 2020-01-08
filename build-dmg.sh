@@ -72,6 +72,8 @@ QT_EXTRA_FRAMEWORKS=""
 QT_EXTRA_IMAGEFORMATS=""
 QT_VERSION="5"
 
+# -- QT_STD_FRAMEWORKS to seek and rewrite links to in binaries / libs
+QT_STD_FRAMEWORKS=QtSvg QtXml QtCore QtGui QtWidgets
 # -- DMG builder (if any) to use
 USEPKGDMG="FALSE"
 USECREATEDMG="FALSE"
@@ -197,7 +199,7 @@ then
       chmod u+rw $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION/$framework
       install_name_tool -id "@executable_path/../Frameworks/$framework.framework/Versions/$QT_VERSION/$framework" $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION/$framework
       # Rewrite dylib links in new framework
-      for lib in QtSvg QtXml QtCore QtGui
+      for lib in $QT_STD_FRAMEWORKS
       do
         binlib=`otool -L $APP_FRAMEWORKS/$framework.framework/Versions/$QT_VERSION/$framework | grep $lib | awk '{print $1}'`
         if [ "x$binlib" != "x" ]
@@ -220,7 +222,7 @@ then
 	  cp -v $QT_DIR/plugins/imageformats/$imageformat $APP_PLUGINS/imageformats/
 
       # Rewrite dylib links in imageformat
-      for lib in QtSvg QtXml QtCore QtGui
+      for lib in $QT_STD_FRAMEWORKS
       do
         binlib=`otool -L $APP_PLUGINS/imageformats/$imageformat | grep $lib | awk '{print $1}'`
         if [ "x$binlib" != "x" ]
