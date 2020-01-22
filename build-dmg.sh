@@ -3,15 +3,20 @@
 QT_DIR_OVERRIDE="NONE"
 QT_FRAMEWORKS_DIR_OVERRIDE="NONE"
 
+# -- DMG builder (if any) to use
+USEPKGDMG="FALSE"
+USECREATEDMG="FALSE"
+
+
 usage()
 {
-	echo "Usage: $0 -d QT_DIR -f QT_FRAMEWORKS_DIR <PROJECT.dmginfo>"
+	echo "Usage: $0 -d QT_DIR -f QT_FRAMEWORKS_DIR <PROJECT.dmginfo> [-p] [-c]"
 	echo "       Command-line args override those provided in dmginfo."
 	exit 1
 }
 
 # Parse options
-while getopts "d:f:" opt
+while getopts "d:f:pc" opt
 do
 	case $opt in
 		d)
@@ -21,6 +26,16 @@ do
 		f)
 			QT_FRAMEWORKS_DIR_OVERRIDE=${OPTARG}
 			echo "Qt frameworks in $QT_FRAMEWORKS_DIR_OVERRIDE will be used."
+			;;
+		p)
+			USEPKGDMG="TRUE"
+			USECREATEDMG="FALSE"
+			echo "Will use pkg-dmg to create disk image."
+			;;
+		c)
+			USEPKGDMG="FALSE"
+			USECREATEDMG="TRUE"
+			echo "Will use create-dmg to create disk image."
 			;;
 		*)
 			usage
@@ -74,10 +89,6 @@ QT_VERSION="5"
 
 # -- QT_STD_FRAMEWORKS to seek and rewrite links to in binaries / libs
 QT_STD_FRAMEWORKS="QtSvg QtXml QtCore QtGui QtWidgets"
-
-# -- DMG builder (if any) to use
-USEPKGDMG="FALSE"
-USECREATEDMG="FALSE"
 
 # -- EXTRA_DYLIBS : Extra dylibs to be copied in to the bundle (or NONE)
 # --              : Format is "<input dylib | NONE>,<input dylib | NONE>,<output dylib>"
