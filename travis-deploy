@@ -121,7 +121,7 @@ chmod u+x ./jq
 # Set a suitable tag if we are deploying a continuous release
 if [ "${CURRENT_BRANCH}" = "${DEVELOPMENT_BRANCH}" ]
 then
-	export TRAVIS_TAG=continuous/$(git log --format=%h -1)
+	export TRAVIS_TAG=travis$(git log --format=%h -1)
 
 	# Set appropriate name/body
 	RELEASE_NAME="Continuous build"
@@ -170,43 +170,6 @@ then
 else
 	echo " -- Found existing release with tag $TRAVIS_TAG"
 	echo "    url: $CURRENT_URL"
-fi
-
-# Prune old continuous releases if we are building from the specified development branch
-echo "Current branch: '${CURRENT_BRANCH}'"
-if [ "${CURRENT_BRANCH}" = "${DEVELOPMENT_BRANCH}" ]
-then
-	echo "Pruning old continuous releases..."
-
-	# Filter release information with jq to get the continuous build urls and tags to delete
-	URLS=$(echo $RELEASES | ./jq -r '.[] | select(.tag_name | match("continuous/.*")) | .url')
-	TAGS=$(echo $RELEASES | ./jq -r '.[] | select(.tag_name | match("continuous/.*")) | .tag_name')
-
-	# Delete old continuous releases (but not the current one if it exists)
-	echo "  - Found continuous release url(s): "$URLS
-	for url in $URLS
-	do
-		if [ "$url" = "$CURRENT_URL" ]
-		then
-			echo " -- Existing continuous release at $url will not be deleted as it is the current release."
-			continue
-		fi
-		echo "  ! Deleting continuous release at $url..."
-		curl -XDELETE --header "Authorization: token ${GITHUB_TOKEN}" $url
-	done
-
-	# Delete tags (but not the current one if it exists)
-	echo "  - Found tags: "$TAGS
-	for tag in $TAGS
-	do
-		if [ "$tag" = "$TRAVIS_TAG" ]
-		then
-			echo " -- Existing continuous release reference $tag will not be deleted as it is the current release."
-			continue
-		fi
-		echo "  ! Deleting reference $tag..."
-		curl -XDELETE --header "Authorization: token ${GITHUB_TOKEN}" ${REPOURL}/git/refs/tags/${tag}
-	done
 fi
 
 # If we don't already have info for our release, create one now
