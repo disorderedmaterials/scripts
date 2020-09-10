@@ -14,7 +14,7 @@ EPSRDIR="/home/tris/src/EPSR25_Feb2019/EPSR"
 # ---------------------------------------------------- #
 
 # Derive locations for installed bin and startup directories
-export EPSRbin="$EPSDIR/bin"
+export EPSRbin="$EPSRDIR/bin"
 export EPSRstartup="$EPSRDIR/startup"
 
 # We will not assume any root folder (EPSRroot) which originally was EPSRbin/run.
