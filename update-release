@@ -243,13 +243,7 @@ then
 	TAG_HASH=$(git rev-parse HEAD)
 
 	# Construct release information
-	RELEASE_DATA='{ "tag_name": "'$RELEASE_TAG'"'
-	RELEASE_DATA=${RELEASE_DATA}', "target_commitish": "'$TAG_HASH'"'
-	RELEASE_DATA=${RELEASE_DATA}', "name": "'$RELEASE_NAME'"'
-	RELEASE_DATA=${RELEASE_DATA}', "body": "'$RELEASE_BODY'"'
-	RELEASE_DATA=${RELEASE_DATA}', "draft": false'
-	RELEASE_DATA=${RELEASE_DATA}', "prerelease": '$RELEASE_PRE
-	RELEASE_DATA=${RELEASE_DATA}" }"
+	RELEASE_DATA=$(jq --null-input --arg tag "$RELEASE_TAG" --arg commitish "$TAG_HASH" --arg name "$RELEASE_NAME" --arg body "$RELEASE_BODY" --arg pre "$RELEASE_PRE" '{"tag_name": $tag, "target_commitish": $commitish, "name": $name, "body": $body, "draft": false, "prerelease": $pre}')
 	echo $RELEASE_DATA
 
 	# Create release
