@@ -257,6 +257,10 @@ then
 
 	# Check errors
 	ERRORS=$(echo $CURRENT_RELEASEINFO | jq -r '. | .errors')
+	echo "Result:"
+	echo $CURRENT_RELEASEINFO
+	echo "Errors:"
+	echo $ERRORS
 	if [ "x$ERRORS" = "x" ]
 	then
 		echo "Error: Failed to create release."
