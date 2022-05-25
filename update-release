@@ -255,6 +255,17 @@ then
 	# Create release
 	CURRENT_RELEASEINFO=$(curl ${CURL_OPTS} --header "Authorization: token ${GITHUB_TOKEN}" --data "$RELEASE_DATA" ${REPO_URL}/releases)
 
+	# Check errors
+	ERRORS=$(echo $CURRENT_RELEASEINFO | jq -r '. | .errors')
+	if [ "x$ERRORS" = "x" ]
+	then
+		echo "Error: Failed to create release."
+		echo "Reported error(s) are:"
+		echo $ERRORS
+		exit 1
+	fi
+
+
 	# Extract url
 	CURRENT_URL=$(echo $CURRENT_RELEASEINFO | jq -r '. | .url')
 fi
