@@ -252,9 +252,10 @@ then
 	# Check for messages
 	MSG=$(echo $CURRENT_RELEASEINFO | jq -r '. | .message')
 	if [ "x$MSG" = "x" ]
+	then
 		echo "Received message:"
 		echo $MSG
-	then
+	fi	
 
 	# Check errors
 	ERRORS=$(echo $CURRENT_RELEASEINFO | jq -r '. | .errors')
