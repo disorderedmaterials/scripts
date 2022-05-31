@@ -9,6 +9,7 @@ APP_LICENSE="NONE"
 APP_PLIST="NONE"
 APP_DSSTORE="NONE"
 APP_EXTRA="NONE"
+APP_LIBPATH="NONE"
 
 usage()
 {
@@ -19,13 +20,14 @@ usage()
 	echo "          -b <Application binary to copy>"
 	echo "          -i <Icon to generate icon set from>"
 	echo "          -l <License file to copy>"
+	echo "          -L <Additional search path for libraries>"
 	echo "          -p <Target Info.plist for the application>"
 	echo "          -v <Application version>"
 	exit 1
 }
 
 # Parse options
-while getopts "a:b:d:e:i:l:v:p:" opt
+while getopts "a:b:d:e:i:l:L:v:p:" opt
 do
 	case $opt in
 		a)
@@ -51,6 +53,10 @@ do
 		l)
 			APP_LICENSE=${OPTARG}
 			echo "License file to copy is '${APP_LICENSE}'."
+			;;
+		L)
+			APP_LIBPATH=${OPTARG}
+			echo "Extra library path is '${APP_LIBPATH}'."
 			;;
 		p)
 			APP_PLIST=${OPTARG}
@@ -158,7 +164,7 @@ done
 # | Run macdeployqt |
 # \-----------------/
 echo -e "\nRunning macdeployqt....\n"
-$QT_DIR/bin/macdeployqt ${APP_ROOT}/${APP_NAME}.app -verbose=2
+$QT_DIR/bin/macdeployqt ${APP_ROOT}/${APP_NAME}.app -verbose=2 -libpath=$APP_LIBPATH
 
 # Run otool on the binaries to show link paths for libs
 for target in ${APP_BINARIES}/*
