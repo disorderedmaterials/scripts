@@ -20,7 +20,7 @@ usage()
 	echo "          -b <Application binary to copy>"
 	echo "          -i <Icon to generate icon set from>"
 	echo "          -l <License file to copy>"
-	echo "          -L Add path to search for libraries"
+	echo "          -L <Additional search path for libraries>"
 	echo "          -p <Target Info.plist for the application>"
 	echo "          -v <Application version>"
 	exit 1
