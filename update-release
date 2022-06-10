@@ -8,7 +8,7 @@ RELEASE_NAME="UnnamedRelease"
 RELEASE_BODY=""
 RELEASE_BODY_FILE=""
 RELEASE_BODY_FILE_WARN="false"
-RELEASE_PRE="false"
+RELEASE_PRE=false
 DELETE_EXISTING="false"
 DELETE_EXISTING_ALWAYS="false"
 DELETE_ALL_ASSETS="false"
@@ -52,7 +52,7 @@ do
 			echo "Release name set to '${RELEASE_NAME}'"
 			;;
 		p)
-			RELEASE_PRE="true"
+			RELEASE_PRE=true
 			echo "Release will be marked as a pre-release."
 			;;
 		a)
@@ -243,7 +243,8 @@ then
 	TAG_HASH=$(git rev-parse HEAD)
 
 	# Construct release information
-	RELEASE_DATA=$(jq --null-input --arg tag "$RELEASE_TAG" --arg commitish "$TAG_HASH" --arg name "$RELEASE_NAME" --arg body "$RELEASE_BODY" --arg pre "$RELEASE_PRE" '{"tag_name": $tag, "target_commitish": $commitish, "name": $name, "body": $body, "draft": false, "prerelease": $pre}')
+	RELEASE_DATA=$(jq --null-input --arg tag "$RELEASE_TAG" --arg commitish "$TAG_HASH" --arg name "$RELEASE_NAME" --arg body "$RELEASE_BODY" --argjson pre $RELEASE_PRE '{"tag_name": $tag, "target_commitish": $commitish, "name": $name, "body": $body, "draft": false, "prerelease": $pre}')
+	echo "Release data is:"
 	echo $RELEASE_DATA
 
 	# Create release
