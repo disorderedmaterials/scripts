@@ -241,6 +241,8 @@ then
 
 	# Create release
 	CURRENT_RELEASEINFO=$(curl ${CURL_OPTS} --header "Authorization: token ${GITHUB_TOKEN}" --data "$RELEASE_DATA" ${REPO_URL}/releases)
+	echo "Release creation returned:"
+	echo $CURRENT_RELEASEINFO
 
 	# Check for messages
 	MSG=$(echo $CURRENT_RELEASEINFO | jq -r '. | .message')
