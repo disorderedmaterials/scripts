@@ -158,7 +158,7 @@ then
 	echo "    url: $CURRENT_URL"
 
 	# Get short hash for existing tag
-	TAG_HASH=`git rev-parse --short $RELEASE_TAG`
+	TAG_HASH=$(echo $CURRENT_RELEASEINFO | jq -r '. | .committish')
 	echo "   hash: $TAG_HASH"
 
 	# Delete existing release?
