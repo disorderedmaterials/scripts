@@ -279,7 +279,7 @@ then
 		ARTIFACT_DATA=$(curl ${CURL_OPTS} --header "Authorization: token ${GITHUB_TOKEN}" \
 		     --header "Accept: application/vnd.github.manifold-preview" \
 		     --header "Content-Type: application/octet-stream" \
-		     --data-binary @$file \
+		     -T $file \
 		     "$UPLOAD_URL?name=$BASENAME")
 
 		ARTIFACT_ID=$(echo $ARTIFACT_DATA | jq -r '. | .id')
