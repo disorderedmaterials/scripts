@@ -9,7 +9,8 @@
 #                                                      #
 # ---------------------------------------------------- #
 
-EPSRDIR=/home/user/EPSR26distribution-2022-06-06/EPSR26workshop/EPSR
+EPSRDIR=${EPSRDIR:-"/opt/EPSR25/EPSR"}
+echo "EPSR main directory is: ${EPSRDIR}"
 
 # ---------------------------------------------------- #
 
