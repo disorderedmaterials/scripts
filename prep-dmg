@@ -29,7 +29,7 @@ usage()
 }
 
 # Parse options
-while getopts "a:b:d:e:i:l:L:v:p:" opt
+while getopts "a:b:d:e:i:l:L:v:p:q:" opt
 do
 	case $opt in
 		a)
