@@ -10,6 +10,7 @@ APP_PLIST="NONE"
 APP_DSSTORE="NONE"
 APP_EXTRA="NONE"
 APP_LIBPATH="NONE"
+APP_QML="NONE"
 
 usage()
 {
@@ -22,6 +23,7 @@ usage()
 	echo "          -l <License file to copy>"
 	echo "          -L <Additional search path for libraries>"
 	echo "          -p <Target Info.plist for the application>"
+	echo "          -q <QML-containing dir to add to deployment>"
 	echo "          -v <Application version>"
 	exit 1
 }
@@ -42,7 +44,7 @@ do
 			QT_DIR=${OPTARG}
 			echo "Qt root directory is '${QT_DIR}'."
 			;;
-    e)
+		e)
 			APP_EXTRA=${OPTARG}
 			echo "Extra files / dirs to add are '${APP_EXTRA}'."
 			;;
@@ -62,7 +64,11 @@ do
 			APP_PLIST=${OPTARG}
 			echo "PList file to use is '${APP_PLIST}'."
 			;;
-	    v)
+		q)
+			APP_QML=${OPTARG}
+			echo "QML dir to include is '${APP_QML}'."
+			;;
+		v)
 			APP_VERSION=${OPTARG}
 			echo "Application version set to '${APP_VERSION}'."
 			;;
@@ -164,7 +170,12 @@ done
 # | Run macdeployqt |
 # \-----------------/
 echo -e "\nRunning macdeployqt....\n"
-$QT_DIR/bin/macdeployqt ${APP_ROOT}/${APP_NAME}.app -verbose=2 -libpath=$APP_LIBPATH
+if [ "x${APP_QML}" != "xNONE" ];
+then
+  $QT_DIR/bin/macdeployqt ${APP_ROOT}/${APP_NAME}.app -verbose=2 -libpath=$APP_LIBPATH -qmldir=${APP_QML}
+else
+  $QT_DIR/bin/macdeployqt ${APP_ROOT}/${APP_NAME}.app -verbose=2 -libpath=$APP_LIBPATH
+fi
 
 # Run otool on the binaries to show link paths for libs
 for target in ${APP_BINARIES}/*
